@@ -1,4 +1,4 @@
-module github.com/your-org
+module github.com/juju-l/smpatch
 
 go 1.21
 
