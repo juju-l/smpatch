@@ -1,4 +1,4 @@
-module github.com/your-org/yamlpatch
+module github.com/your-org
 
 go 1.21
 

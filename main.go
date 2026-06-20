@@ -47,4 +47,10 @@ spec:
 	for _, d := range diffs {
 		fmt.Printf("%s: -%v +%v\n", d.Path, d.Old, d.New)
 	}
+	err := yamlpatch.Apply(obj, patches)
+	if err != nil {
+		fmt.Printf("Error applying patches: %v\n", err)
+		return
+	}
+	fmt.Printf("After applying patches: %v\n", obj)
 }
