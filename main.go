@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/your-org/yamlpatch"
+	// "github.com/your-org/yamlpatch"
 	"gopkg.in/yaml.v3"
 )
 

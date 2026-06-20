@@ -1,6 +1,6 @@
-package yamlpatch
+package main
 
-import "gopkg.in/yaml.v3"
+//import "gopkg.in/yaml.v3"
 
 // ResourcePatchSpec 对应 ResourcePatch CR 的 spec
 type ResourcePatchSpec struct {

@@ -1,4 +1,4 @@
-package yamlpatch
+package main
 
 import (
 	"fmt"

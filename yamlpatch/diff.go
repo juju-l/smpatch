@@ -1,8 +1,7 @@
-package yamlpatch
+package main
 
 import (
 	"reflect"
-	"strings"
 )
 
 // DryRun 返回应用 patch 后的新对象（不修改原始对象）

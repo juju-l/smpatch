@@ -1,8 +1,7 @@
-package yamlpatch
+package main
 
 import (
 	"reflect"
-	"strings"
 )
 
 func isMap(v interface{}) bool {
