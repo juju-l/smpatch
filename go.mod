@@ -1,8 +1,8 @@
-module smpatch
+module github.com/juju-l/smpatch
 
 require (
 	///
-	gopkg.in/yaml.v3 v3.0.1 ///
+	gopkg.in/yaml.v3 v3.0.1 /// /// ///
 	///
 )
 
