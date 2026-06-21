@@ -2,7 +2,7 @@ package smpatch
 
 import (
 	"fmt"
-	//"bytes"
+	"bytes"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,18 +18,52 @@ type Patch struct {
 	Value any `yaml:"value"`
 }
 
+func normalizeMap(v any) any {
+	switch val := v.(type) {
+	case map[any]any:
+		m := map[string]any{}
+		for k, vv := range val {
+			m[fmt.Sprint(k)] = normalizeMap(vv)
+		}
+		return m
+
+	case map[string]any:
+		m := map[string]any{}
+		for k, vv := range val {
+			m[k] = normalizeMap(vv)
+		}
+		return m
+
+	case []any:
+		for i, vv := range val {
+			val[i] = normalizeMap(vv)
+		}
+		return val
+
+	default:
+		return v
+	}
+}
+
 // cloneViaYAML 使用 YAML Marshal / Unmarshal 实现深拷贝
 // 泛型 T 仅用于约束返回类型，内部实现使用 any
 func cloneViaYAML[T any](v any) T {
-	data, err := yaml.Marshal(v)
-	if err != nil {
-		panic(fmt.Sprintf("yaml marshal failed: %v", err))
+	var buf bytes.Buffer
+
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(v); err != nil {
+		panic(fmt.Sprintf("yaml encode failed: %v", err))
 	}
 
 	var out T
-	if err := yaml.Unmarshal(data, &out); err != nil {
-		panic(fmt.Sprintf("yaml unmarshal failed: %v", err))
+	dec := yaml.NewDecoder(bytes.NewReader(buf.Bytes()))
+	dec.KnownFields(true)
+
+	if err := dec.Decode(&out); err != nil {
+		panic(fmt.Sprintf("yaml decode failed: %v", err))
 	}
 
-	return out
+	// ✅ 强制修正 map[any]any → map[string]any
+	return normalizeMap(out).(T)
 }

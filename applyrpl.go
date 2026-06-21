@@ -10,6 +10,9 @@ func applyRpl(
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 	cur := src
 	for i := 0; i < len(parts)-1; i++ {
+		if cur[parts[i]] == nil {
+			cur[parts[i]] = map[string]any{}
+		}
 		cur = cur[parts[i]].(map[string]any)
 	}
 	key := parts[len(parts)-1]
