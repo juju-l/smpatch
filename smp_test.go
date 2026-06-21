@@ -83,7 +83,7 @@ func TestApply_ScalarArray_Keep(t *testing.T) {
 func TestApply_ScalarArray_Replace(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321, 987}}}
 	patches := []*Patch{
-		{Ope: "merge", PathKey: "/spec/p", ItemOps: "replace", Old: 321, Value: 123},
+		{Ope: "merge", PathKey: "/spec/p", ItemOps: "replace", Old: 321, Value: []any{123}},
 	}
 
 	tgt := cloneViaYAML[map[string]any](src)
