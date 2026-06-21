@@ -15,7 +15,7 @@ func itemOps(
 	key := parts[len(parts)-1]
 
 	arr := cur[key].([]any)
-	vals := toSlice(p.Value)
+	vals := p.Value.([]any)
 
 	switch p.ItemOps {
 	case "add":

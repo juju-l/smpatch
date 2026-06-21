@@ -18,7 +18,7 @@ func mapAr(
 	for _, v := range p.Value.([]any) {
 		m := v.(map[string]any)
 		k := m[p.ByKey]
-		for i, e := range arr {
+		for _, e := range arr {
 			if e.(map[string]any)[p.ByKey] == k {
 				for mk, mv := range m {
 					e.(map[string]any)[mk] = mv
