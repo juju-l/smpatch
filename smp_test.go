@@ -4,6 +4,28 @@ import (
 	"testing"
 )
 
+func clone(src any) any {
+	switch v := src.(type) {
+
+	case map[string]any:
+		dst := map[string]any{}
+		for k, val := range v {
+			dst[k] = clone(val)
+		}
+		return dst
+
+	case []any:
+		dst := make([]any, len(v))
+		for i, val := range v {
+			dst[i] = clone(val)
+		}
+		return dst
+
+	default:
+		return v
+	}
+}
+
 // ============================================
 // Scalar Array Tests (/spec/p)
 // ============================================
@@ -13,7 +35,7 @@ func TestApply_ScalarArray_Remove(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "remove", Value: []any{321}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["p"].([]any)
@@ -27,7 +49,7 @@ func TestApply_ScalarArray_Disable(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "disable", Value: []any{321}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["p"].([]any)
@@ -41,7 +63,7 @@ func TestApply_ScalarArray_Add(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "add", Value: []any{987}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["p"].([]any)
@@ -55,7 +77,7 @@ func TestApply_ScalarArray_Keep(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "keep", Value: []any{321, 987}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["p"].([]any)
@@ -69,7 +91,7 @@ func TestApply_ScalarArray_Replace(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "replace", Old: 321, Value: 123},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["p"].([]any)
@@ -98,7 +120,7 @@ func TestApply_StructArray_ByKey_Merge(t *testing.T) {
 			},
 		},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	bindings := tgt["spec"].(map[string]any)["bindings"].([]any)
@@ -119,7 +141,7 @@ func TestApply_MixedArray_Replace(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "replace", PathKey: "/spec/tags", MixedAr: true, Value: []any{"x", "y"}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	result := tgt["spec"].(map[string]any)["tags"].([]any)
@@ -133,7 +155,7 @@ func TestApply_NormalField_Merge(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec", Value: map[string]any{"c": "tst"}},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	if tgt["spec"].(map[string]any)["c"] != "tst" {
@@ -150,7 +172,7 @@ func TestApply_Delete_Field(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "delete", PathKey: "/spec/add"},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	if _, ok := tgt["spec"].(map[string]any)["add"]; ok {
@@ -170,7 +192,7 @@ func TestApply_Delete_FromStructArray(t *testing.T) {
 	patches := []*Patch{
 		{Ope: "delete", PathKey: "/spec/bindings", ByKey: "role", Value: "qwertyuiopzsd"},
 	}
-	tgt := map[string]any{}
+	tgt := clone(src).(map[string]any)
 	Apply(src, patches, tgt)
 
 	bindings := tgt["spec"].(map[string]any)["bindings"].([]any)
