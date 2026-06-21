@@ -22,15 +22,30 @@ func mapAr(p *Patch, tgt map[string]any) error {
 		m := v.(map[string]any)
 		k := m[p.ByKey]
 		found := false
-		for i, e := range arr {
+
+		for _, e := range arr {
 			if e.(map[string]any)[p.ByKey] == k {
+				// ✅ 只 merge，不替换
 				for mk, mv := range m {
-					arr[i].(map[string]any)[mk] = mv
+					if mk == "members" {
+						// ✅ 数组合并
+						oldMembers := e.(map[string]any)["members"].([]any)
+						newMembers := mv.([]any)
+						for _, nm := range newMembers {
+							if !contains(oldMembers, nm) {
+								oldMembers = append(oldMembers, nm)
+							}
+						}
+						e.(map[string]any)["members"] = oldMembers
+					} else {
+						e.(map[string]any)[mk] = mv
+					}
 				}
 				found = true
 				break
 			}
 		}
+
 		if !found {
 			arr = append(arr, m)
 		}
@@ -38,4 +53,13 @@ func mapAr(p *Patch, tgt map[string]any) error {
 
 	cur[key] = arr
 	return nil
+}
+
+func contains(a []any, v any) bool {
+	for _, x := range a {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
