@@ -248,6 +248,46 @@ func TestItemOps_Expr_NotUnique(t *testing.T) {
 	}
 }
 
+func TestItemOps_Expr_NotEqual(t *testing.T) {
+	src := map[string]any{
+		"spec": map[string]any{
+			"bindings": []any{
+				map[string]any{
+					"role": "admin",
+					"members": []any{1, 2},
+				},
+				map[string]any{
+					"role": "viewer",
+					"members": []any{3, 4},
+				},
+			},
+		},
+	}
+
+	tgt := DeepCopy(src).(map[string]any)
+
+	patches := []*Patch{
+		{
+			Ope:     "merge",
+			PathKey: "/spec/bindings/role!=viewer/members",
+			ItemOps: "remove",
+			Value:   []any{1},
+		},
+	}
+
+	if err := Apply(src, patches, tgt); err != nil {
+		t.Fatalf("Apply failed: %v", err)
+	}
+
+	members := tgt["spec"].
+		(map[string]any)["bindings"].([]any)[0].
+		(map[string]any)["members"].([]any)
+
+	if len(members) != 1 {
+		t.Fatalf("remove with != failed, got %v", members)
+	}
+}
+
 func TestApply_Delete_FromStructArray(t *testing.T) {
 	src := map[string]any{"spec":
 	//

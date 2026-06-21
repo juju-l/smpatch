@@ -116,12 +116,19 @@ func evalSimpleExpr(obj map[string]any, expr string) bool {
 			evalSimpleExpr(obj, parts[1])
 	}
 
-	// role==admin
-	kv := strings.SplitN(expr, "==", 2)
+	// role==admin / role!=admin
+	kv := strings.SplitN(expr, "=", 2)
 	if len(kv) != 2 {
 		return false
 	}
-	return fmt.Sprint(obj[kv[0]]) == kv[1]
+
+	actual := fmt.Sprint(obj[kv[0]])
+	want := kv[1]
+
+	if kv[0] == "!" {
+		return actual != want
+	}
+	return actual == want
 }
 
 // struct
