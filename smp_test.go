@@ -178,17 +178,18 @@ func TestApply_NormalField_Merge(t *testing.T) {
 
 func TestApply_Delete_Field(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"add": "r"}}
+	tgt := cloneViaYAML[map[string]any](src)
+
 	patches := []*Patch{
 		{Ope: "delete", PathKey: "/spec/add"},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
 	}
 
-	if _, ok := tgt["spec"].(map[string]any)["add"]; ok {
+	spec := tgt["spec"].(map[string]any)
+	if _, ok := spec["add"]; ok {
 		t.Fatalf("delete field failed")
 	}
 }

@@ -1,14 +1,19 @@
 package smpatch
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 func mapAr(
 	p *Patch,
 	src map[string]any,
 	tgt map[string]any,
 ) error {
+
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
-	cur := src
+
+	cur := tgt // ✅
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
@@ -23,20 +28,35 @@ func mapAr(
 		m := v.(map[string]any)
 		k := m[p.ByKey]
 		found := false
-		for i, e := range arr {
+
+		for _, e := range arr {
 			if e.(map[string]any)[p.ByKey] == k {
+				// ✅ 只 merge，不替换整个 struct
 				for mk, mv := range m {
-					arr[i].(map[string]any)[mk] = mv
+					if mk == "members" {
+						// ✅ 数组合并
+						oldMembers := e.(map[string]any)["members"].([]any)
+						newMembers := mv.([]any)
+						for _, nm := range newMembers {
+							if !slices.Contains(oldMembers, nm) {
+								oldMembers = append(oldMembers, nm)
+							}
+						}
+						e.(map[string]any)["members"] = oldMembers
+					} else {
+						e.(map[string]any)[mk] = mv
+					}
 				}
 				found = true
 				break
 			}
 		}
+
 		if !found {
 			arr = append(arr, m)
 		}
 	}
 
-	tgt[key] = arr
+	cur[key] = arr
 	return nil
 }

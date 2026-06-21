@@ -7,8 +7,10 @@ func dpMeg(
 	src map[string]any,
 	tgt map[string]any,
 ) error {
+
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
-	cur := src
+
+	cur := tgt // ✅
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
@@ -23,9 +25,9 @@ func dpMeg(
 		for mk, mv := range p.Value.(map[string]any) {
 			cp[mk] = mv
 		}
-		tgt[key] = cp
+		cur[key] = cp
 	default:
-		tgt[key] = cloneViaYAML[any](p.Value)
+		cur[key] = cloneViaYAML[any](p.Value)
 	}
 
 	return nil

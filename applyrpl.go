@@ -8,7 +8,7 @@ func applyRpl(
 	tgt map[string]any,
 ) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
-	cur := src
+	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
