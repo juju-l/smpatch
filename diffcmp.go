@@ -1,5 +1,23 @@
-package smpatch
+package smpatch//
 
-func DiffCmp(tgt map[string]any, patches []*Patch) error {
-	return DyRun(tgt, patches)
+// import (
+// 	
+// )
+
+///** func
+
+func DiffCmp(
+	src map[string]any,
+	patches []*Patch,
+	tgt map[string]any,
+  ) error {
+	return DyRun(src, patches, tgt) ///**
 }
+
+func init() {
+	///**
+}
+
+// struct
+
+// interface

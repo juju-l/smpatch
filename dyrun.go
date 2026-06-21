@@ -1,5 +1,23 @@
-package smpatch
+package smpatch//
 
-func DyRun(tgt map[string]any, patches []*Patch) error {
-	return Apply(tgt, patches, tgt)
+// import (
+// 	
+// )
+
+///** func
+
+func DyRun(
+	src map[string]any,
+	patches []*Patch,
+	tgt map[string]any,
+  ) error {
+	return Apply(src, patches, tgt) ///**
 }
+
+func init() {
+	///**
+}
+
+// struct
+
+// interface
