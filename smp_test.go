@@ -178,7 +178,75 @@ func TestApply_MixedArray_Replace(t *testing.T) {
 	}
 }
 
+func TestItemOps_Expr_And(t *testing.T) {
+	src := map[string]any{
+		"spec": map[string]any{
+			"bindings": []any{
+				map[string]any{
+					"role": "admin",
+					"env":  "prod",
+					"members": []any{1, 2, 3},
+				},
+				map[string]any{
+					"role": "admin",
+					"env":  "dev",
+					"members": []any{4, 5},
+				},
+			},
+		},
+	}
+
+	tgt := DeepCopy(src).(map[string]any)
+
+	patches := []*Patch{
+		{
+			Ope:     "merge",
+			PathKey: "/spec/bindings/role==admin && env==prod/members",
+			ItemOps: "remove",
+			Value:   []any{1},
+		},
+	}
+
+	if err := Apply(src, patches, tgt); err != nil {
+		t.Fatalf("Apply failed: %v", err)
+	}
+
+	members := tgt["spec"].
+		(map[string]any)["bindings"].([]any)[0].
+		(map[string]any)["members"].([]any)
+
+	if len(members) != 2 {
+		t.Fatalf("remove failed, got %v", members)
+	}
+}
+
 // func
+
+func TestItemOps_Expr_NotUnique(t *testing.T) {
+	src := map[string]any{
+		"spec": map[string]any{
+			"bindings": []any{
+				map[string]any{"role": "admin"},
+				map[string]any{"role": "admin"},
+			},
+		},
+	}
+
+	tgt := DeepCopy(src).(map[string]any)
+
+	patches := []*Patch{
+		{
+			Ope:     "merge",
+			PathKey: "/spec/bindings/role==admin/members",
+			ItemOps: "remove",
+			Value:   []any{1},
+		},
+	}
+
+	if err := Apply(src, patches, tgt); err == nil {
+		t.Fatal("expected error for non-unique expr")
+	}
+}
 
 func TestApply_Delete_FromStructArray(t *testing.T) {
 	src := map[string]any{"spec":
