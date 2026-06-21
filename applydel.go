@@ -1,23 +1,17 @@
 package smpatch
 
 import (
-	"slices"
 	"strings"
-	//"slices"
+	"slices"
 )
 
-func applyDel(
-	p *Patch,
-	src map[string]any,
-	tgt map[string]any,
-) error {
-
+func applyDel(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 
 	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
-			return nil // ✅ 不存在就是成功
+			return nil
 		}
 		cur = cur[parts[i]].(map[string]any)
 	}
@@ -33,7 +27,7 @@ func applyDel(
 	}
 
 	if p.ItemOps != "" {
-		return itemOps(p, src, tgt)
+		return itemOps(p, tgt)
 	}
 
 	delete(cur, key)

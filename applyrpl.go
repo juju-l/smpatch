@@ -2,12 +2,9 @@ package smpatch
 
 import "strings"
 
-func applyRpl(
-	p *Patch,
-	src map[string]any,
-	tgt map[string]any,
-) error {
+func applyRpl(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
+
 	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
@@ -17,6 +14,6 @@ func applyRpl(
 	}
 	key := parts[len(parts)-1]
 
-	tgt[key] = cloneViaYAML[any](p.Value)
+	cur[key] = DeepCopy(p.Value)
 	return nil
 }

@@ -1,10 +1,97 @@
 package smpatch
 
 import (
-	"fmt"
-	"bytes"
-	"gopkg.in/yaml.v3"
+	"reflect"
+	"time"
 )
+
+// DeepCopy performs a recursive deep copy of the given value.
+//
+// Supported types:
+//   - map[string]any
+//   - []any
+//   - struct / pointer
+//   - time.Time
+//
+// Notes:
+//   - unexported struct fields are ignored
+//   - func / channel / unsafe.Pointer are not supported
+//   - cycle detection is enabled
+func DeepCopy(v any) any {
+	if v == nil {
+		return nil
+	}
+	seen := make(map[uintptr]any)
+	return deepCopyValue(reflect.ValueOf(v), seen)
+}
+
+func deepCopyValue(rv reflect.Value, seen map[uintptr]any) any {
+	switch rv.Kind() {
+
+	case reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64,
+		reflect.String:
+		return rv.Interface()
+
+	case reflect.Struct:
+		if t, ok := rv.Interface().(time.Time); ok {
+			return t
+		}
+		return deepCopyStruct(rv, seen)
+
+	case reflect.Ptr:
+		if rv.IsNil() {
+			return nil
+		}
+		addr := rv.Pointer()
+		if val, ok := seen[addr]; ok {
+			return val
+		}
+		newPtr := reflect.New(rv.Elem().Type())
+		seen[addr] = newPtr.Interface()
+		newPtr.Elem().Set(reflect.ValueOf(deepCopyValue(rv.Elem(), seen)))
+		return newPtr.Interface()
+
+	case reflect.Map:
+		if rv.IsNil() {
+			return nil
+		}
+		newMap := reflect.MakeMap(rv.Type())
+		for _, k := range rv.MapKeys() {
+			newMap.SetMapIndex(
+				reflect.ValueOf(deepCopyValue(k, seen)),
+				reflect.ValueOf(deepCopyValue(rv.MapIndex(k), seen)),
+			)
+		}
+		return newMap.Interface()
+
+	case reflect.Slice, reflect.Array:
+		newSlice := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Cap())
+		for i := 0; i < rv.Len(); i++ {
+			newSlice.Index(i).Set(
+				reflect.ValueOf(deepCopyValue(rv.Index(i), seen)),
+			)
+		}
+		return newSlice.Interface()
+
+	default:
+		return rv.Interface()
+	}
+}
+
+func deepCopyStruct(rv reflect.Value, seen map[uintptr]any) any {
+	newStruct := reflect.New(rv.Type()).Elem()
+	for i := 0; i < rv.NumField(); i++ {
+		if f := rv.Field(i); f.CanInterface() {
+			newStruct.Field(i).Set(
+				reflect.ValueOf(deepCopyValue(f, seen)),
+			)
+		}
+	}
+	return newStruct.Interface()
+}
 
 type Patch struct {
 	Ope     string `yaml:"ope"`
@@ -16,118 +103,4 @@ type Patch struct {
 
 	Old   any `yaml:"old,omitempty"`
 	Value any `yaml:"value"`
-}
-
-func normalizeMap(v any) any {
-	switch val := v.(type) {
-	case map[any]any:
-		m := map[string]any{}
-		for k, vv := range val {
-			m[fmt.Sprint(k)] = normalizeMap(vv)
-		}
-		return m
-
-	case map[string]any:
-		m := map[string]any{}
-		for k, vv := range val {
-			m[k] = normalizeMap(vv)
-		}
-		return m
-
-	case []any:
-		for i, vv := range val {
-			val[i] = normalizeMap(vv)
-		}
-		return val
-
-	default:
-		return v
-	}
-}
-
-// cloneViaYAML 使用 YAML Marshal / Unmarshal 实现深拷贝
-// 泛型 T 仅用于约束返回类型，内部实现使用 any
-func cloneViaYAML[T any](v any) T {
-	var buf bytes.Buffer
-
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(v); err != nil {
-		panic(fmt.Sprintf("yaml encode failed: %v", err))
-	}
-
-	var out T
-	dec := yaml.NewDecoder(bytes.NewReader(buf.Bytes()))
-	dec.KnownFields(true)
-
-	if err := dec.Decode(&out); err != nil {
-		panic(fmt.Sprintf("yaml decode failed: %v", err))
-	}
-
-	// ✅ 强制修正 map[any]any → map[string]any
-	return normalizeMap(out).(T)
-}
-
-func copyMap(src, dst map[string]any) {
-	for k, v := range src {
-		switch v := v.(type) {
-		case map[string]any:
-			sub := map[string]any{}
-			copyMap(v, sub)
-			dst[k] = sub
-		case []any:
-			dst[k] = cloneSlice(v)
-		default:
-			dst[k] = v
-		}
-	}
-}
-
-func cloneSlice(s []any) []any {
-	out := make([]any, len(s))
-	for i, v := range s {
-		switch v := v.(type) {
-		case map[string]any:
-			sub := map[string]any{}
-			copyMap(v, sub)
-			out[i] = sub
-		case []any:
-			out[i] = cloneSlice(v)
-		default:
-			out[i] = v
-		}
-	}
-	return out
-}
-
-func copyEntireStructure(src, dst map[string]any) {
-	for k, v := range src {
-		switch v := v.(type) {
-		case map[string]any:
-			sub := map[string]any{}
-			copyEntireStructure(v, sub)
-			dst[k] = sub
-		case []any:
-			dst[k] = cloneSlice(v)
-		default:
-			dst[k] = v
-		}
-	}
-}
-
-func cloneSlice1(s []any) []any {
-	out := make([]any, len(s))
-	for i, v := range s {
-		switch v := v.(type) {
-		case map[string]any:
-			sub := map[string]any{}
-			copyEntireStructure(v, sub)
-			out[i] = sub
-		case []any:
-			out[i] = cloneSlice(v)
-		default:
-			out[i] = v
-		}
-	}
-	return out
 }

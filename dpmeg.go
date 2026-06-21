@@ -2,15 +2,10 @@ package smpatch
 
 import "strings"
 
-func dpMeg(
-	p *Patch,
-	src map[string]any,
-	tgt map[string]any,
-) error {
-
+func dpMeg(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 
-	cur := tgt // ✅
+	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
@@ -21,14 +16,13 @@ func dpMeg(
 
 	switch v := cur[key].(type) {
 	case map[string]any:
-		cp := cloneViaYAML[map[string]any](v)
+		cp := DeepCopy(v).(map[string]any)
 		for mk, mv := range p.Value.(map[string]any) {
 			cp[mk] = mv
 		}
 		cur[key] = cp
 	default:
-		cur[key] = cloneViaYAML[any](p.Value)
+		cur[key] = DeepCopy(p.Value)
 	}
-
 	return nil
 }

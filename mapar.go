@@ -1,19 +1,13 @@
 package smpatch
 
 import (
-	"slices"
 	"strings"
 )
 
-func mapAr(
-	p *Patch,
-	src map[string]any,
-	tgt map[string]any,
-) error {
-
+func mapAr(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 
-	cur := tgt // ✅
+	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
@@ -22,36 +16,21 @@ func mapAr(
 	}
 	key := parts[len(parts)-1]
 
-	arr := cloneViaYAML[[]any](cur[key])
+	arr := DeepCopy(cur[key]).([]any)
 
 	for _, v := range p.Value.([]any) {
 		m := v.(map[string]any)
 		k := m[p.ByKey]
 		found := false
-
-		for _, e := range arr {
+		for i, e := range arr {
 			if e.(map[string]any)[p.ByKey] == k {
-				// ✅ 只 merge，不替换整个 struct
 				for mk, mv := range m {
-					if mk == "members" {
-						// ✅ 数组合并
-						oldMembers := e.(map[string]any)["members"].([]any)
-						newMembers := mv.([]any)
-						for _, nm := range newMembers {
-							if !slices.Contains(oldMembers, nm) {
-								oldMembers = append(oldMembers, nm)
-							}
-						}
-						e.(map[string]any)["members"] = oldMembers
-					} else {
-						e.(map[string]any)[mk] = mv
-					}
+					arr[i].(map[string]any)[mk] = mv
 				}
 				found = true
 				break
 			}
 		}
-
 		if !found {
 			arr = append(arr, m)
 		}

@@ -4,17 +4,13 @@ import (
 	"testing"
 )
 
-// ============================================
-// Scalar Array Tests (/spec/p)
-// ============================================
-
 func TestApply_ScalarArray_Remove(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321, 987}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "remove", Value: []any{321}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -28,11 +24,11 @@ func TestApply_ScalarArray_Remove(t *testing.T) {
 
 func TestApply_ScalarArray_Disable(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321, 987}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "disable", Value: []any{321}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -46,11 +42,11 @@ func TestApply_ScalarArray_Disable(t *testing.T) {
 
 func TestApply_ScalarArray_Add(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "add", Value: []any{987}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -64,11 +60,11 @@ func TestApply_ScalarArray_Add(t *testing.T) {
 
 func TestApply_ScalarArray_Keep(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321, 987, 123}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "keep", Value: []any{321, 987}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -82,11 +78,11 @@ func TestApply_ScalarArray_Keep(t *testing.T) {
 
 func TestApply_ScalarArray_Replace(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"p": []any{321, 987}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec/p", ItemOps: "replace", Old: 321, Value: []any{123}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -98,52 +94,46 @@ func TestApply_ScalarArray_Replace(t *testing.T) {
 	}
 }
 
-// ============================================
-// Struct Array Tests (/spec/bindings)
-// ============================================
-
 func TestApply_StructArray_ByKey_Merge(t *testing.T) {
 	src := map[string]any{
 		"spec": map[string]any{
 			"bindings": []any{
-				map[string]any{"role": "qwertyuiophjkl", "members": []any{"1", "2"}},
+				map[string]any{"role": "admin", "members": []any{"1", "2"}},
 			},
 		},
 	}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{
 			Ope: "merge", PathKey: "/spec/bindings", ByKey: "role",
 			Value: []any{
-				map[string]any{"role": "qwertyuiophjkl", "members": []any{"3", "yuiop"}},
+				map[string]any{"role": "admin", "members": []any{"3"}},
 			},
 		},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
 	}
 
-	bindings := tgt["spec"].(map[string]any)["bindings"].([]any)
-	members := bindings[0].(map[string]any)["members"].([]any)
+	members := tgt["spec"].
+		(map[string]any)["bindings"].
+		([]any)[0].
+		(map[string]any)["members"].([]any)
 
-	if len(members) != 4 {
+	if len(members) != 3 {
 		t.Fatalf("byKey merge failed, got %v", members)
 	}
 }
 
-// ============================================
-// Mixed Array & Normal Field Tests
-// ============================================
-
 func TestApply_MixedArray_Replace(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"tags": []any{1, "a", true}}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "replace", PathKey: "/spec/tags", MixedAr: true, Value: []any{"x", "y"}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -157,11 +147,11 @@ func TestApply_MixedArray_Replace(t *testing.T) {
 
 func TestApply_NormalField_Merge(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"add": "r"}}
+	tgt := DeepCopy(src).(map[string]any)
+
 	patches := []*Patch{
 		{Ope: "merge", PathKey: "/spec", Value: map[string]any{"c": "tst"}},
 	}
-
-	tgt := cloneViaYAML[map[string]any](src)
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)
@@ -172,13 +162,9 @@ func TestApply_NormalField_Merge(t *testing.T) {
 	}
 }
 
-// ============================================
-// Delete Tests
-// ============================================
-
 func TestApply_Delete_Field(t *testing.T) {
 	src := map[string]any{"spec": map[string]any{"add": "r"}}
-	tgt := cloneViaYAML[map[string]any](src)
+	tgt := DeepCopy(src).(map[string]any)
 
 	patches := []*Patch{
 		{Ope: "delete", PathKey: "/spec/add"},
@@ -188,8 +174,7 @@ func TestApply_Delete_Field(t *testing.T) {
 		t.Fatalf("Apply failed: %v", err)
 	}
 
-	spec := tgt["spec"].(map[string]any)
-	if _, ok := spec["add"]; ok {
+	if _, ok := tgt["spec"].(map[string]any)["add"]; ok {
 		t.Fatalf("delete field failed")
 	}
 }
@@ -198,16 +183,16 @@ func TestApply_Delete_FromStructArray(t *testing.T) {
 	src := map[string]any{
 		"spec": map[string]any{
 			"bindings": []any{
-				map[string]any{"role": "qwertyuiopzsd"},
-				map[string]any{"role": "qwertyuiophjkl"},
+				map[string]any{"role": "a"},
+				map[string]any{"role": "b"},
 			},
 		},
 	}
-	patches := []*Patch{
-		{Ope: "delete", PathKey: "/spec/bindings", ByKey: "role", Value: "qwertyuiopzsd"},
-	}
+	tgt := DeepCopy(src).(map[string]any)
 
-	tgt := cloneViaYAML[map[string]any](src)
+	patches := []*Patch{
+		{Ope: "delete", PathKey: "/spec/bindings", ByKey: "role", Value: "a"},
+	}
 
 	if err := Apply(src, patches, tgt); err != nil {
 		t.Fatalf("Apply failed: %v", err)

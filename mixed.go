@@ -2,15 +2,10 @@ package smpatch
 
 import "strings"
 
-func mixed(
-	p *Patch,
-	src map[string]any,
-	tgt map[string]any,
-) error {
-
+func mixed(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 
-	cur := tgt // ✅
+	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {
 		if cur[parts[i]] == nil {
 			cur[parts[i]] = map[string]any{}
@@ -19,6 +14,6 @@ func mixed(
 	}
 	key := parts[len(parts)-1]
 
-	cur[key] = cloneViaYAML[any](p.Value)
+	cur[key] = DeepCopy(p.Value)
 	return nil
 }
