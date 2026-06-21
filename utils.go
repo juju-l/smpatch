@@ -43,9 +43,19 @@ func filter(arr []any, fn func(any) bool) []any {
 // func AnyWhere https://pkg.go.dev/slices
 
 func toSlice(v any) []any {
-	//
 	if s, ok := v.([]any); ok {
-	return s
+		return s
+	}
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return nil
+	}
+	if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+		out := make([]any, rv.Len())
+		for i := 0; i < rv.Len(); i++ {
+			out[i] = rv.Index(i).Interface()
+		}
+		return out
 	}
 	return []any{v}
 }
