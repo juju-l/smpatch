@@ -6,7 +6,7 @@ func DyRun(
 	tgt map[string]any,
 ) error {
 	for k, v := range src {
-		tgt[k] = v
+		tgt[k] = cloneViaYAML[[]any](v)
 	}
 	return Apply(src, patches, tgt)
 }

@@ -1,6 +1,9 @@
 package smpatch
 
-import "strings"
+import (
+	"strings"
+	"slices"
+)
 
 func applyDel(
 	p *Patch,
@@ -15,14 +18,11 @@ func applyDel(
 	key := parts[len(parts)-1]
 
 	if p.ByKey != "" {
-		arr := cur[key].([]any)
-		newArr := []any{}
-		for _, v := range arr {
-			if v.(map[string]any)[p.ByKey] != p.Value {
-				newArr = append(newArr, v)
-			}
-		}
-		tgt[key] = newArr
+		arr := cloneViaYAML[[]any](cur[key])
+		arr = slices.DeleteFunc(arr, func(v any) bool {
+			return v.(map[string]any)[p.ByKey] == p.Value
+		})
+		tgt[key] = arr
 		return nil
 	}
 

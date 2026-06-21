@@ -1,9 +1,8 @@
 package smpatch
 
 import (
-	"fmt"
-	"slices"
 	"strings"
+	"slices"
 )
 
 func itemOps(
@@ -18,18 +17,11 @@ func itemOps(
 	}
 	key := parts[len(parts)-1]
 
-	arr := cur[key].([]any)
-
-	// ✅ 强制 Value 必须是数组
-	vals, ok := p.Value.([]any)
-	if !ok {
-		return fmt.Errorf("itemOps %s requires value to be array", p.ItemOps)
-	}
+	arr := cloneViaYAML[[]any](cur[key])
 
 	switch p.ItemOps {
-
 	case "add":
-		for _, v := range vals {
+		for _, v := range p.Value.([]any) {
 			if !slices.Contains(arr, v) {
 				arr = append(arr, v)
 			}
@@ -37,32 +29,25 @@ func itemOps(
 
 	case "remove":
 		arr = slices.DeleteFunc(arr, func(v any) bool {
-			return slices.Contains(vals, v)
+			return slices.Contains(p.Value.([]any), v)
 		})
 
 	case "replace":
-		if p.Old == nil {
-			return fmt.Errorf("itemOps replace requires old")
-		}
-		oldVal, ok := p.Old.(any)
-		if !ok {
-			return fmt.Errorf("itemOps replace old must match array element type")
-		}
 		for i, v := range arr {
-			if v == oldVal {
-				arr[i] = vals[0]
+			if v == p.Old {
+				arr[i] = p.Value.([]any)[0]
 				break
 			}
 		}
 
 	case "keep":
 		arr = slices.DeleteFunc(arr, func(v any) bool {
-			return !slices.Contains(vals, v)
+			return !slices.Contains(p.Value.([]any), v)
 		})
 
 	case "disable":
 		arr = slices.DeleteFunc(arr, func(v any) bool {
-			return slices.Contains(vals, v)
+			return slices.Contains(p.Value.([]any), v)
 		})
 	}
 

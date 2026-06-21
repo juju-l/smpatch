@@ -14,6 +14,6 @@ func mixed(
 	}
 	key := parts[len(parts)-1]
 
-	tgt[key] = p.Value
+	tgt[key] = cloneViaYAML[any](p.Value)
 	return nil
 }

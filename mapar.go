@@ -14,20 +14,24 @@ func mapAr(
 	}
 	key := parts[len(parts)-1]
 
-	arr := cur[key].([]any)
+	arr := cloneViaYAML[[]any](cur[key])
+
 	for _, v := range p.Value.([]any) {
 		m := v.(map[string]any)
 		k := m[p.ByKey]
-		for _, e := range arr {
+		found := false
+		for i, e := range arr {
 			if e.(map[string]any)[p.ByKey] == k {
 				for mk, mv := range m {
-					e.(map[string]any)[mk] = mv
+					arr[i].(map[string]any)[mk] = mv
 				}
-				goto NEXT
+				found = true
+				break
 			}
 		}
-		arr = append(arr, m)
-	NEXT:
+		if !found {
+			arr = append(arr, m)
+		}
 	}
 
 	tgt[key] = arr

@@ -16,12 +16,13 @@ func dpMeg(
 
 	switch v := cur[key].(type) {
 	case map[string]any:
+		cp := cloneViaYAML[map[string]any](v)
 		for mk, mv := range p.Value.(map[string]any) {
-			v[mk] = mv
+			cp[mk] = mv
 		}
-		tgt[key] = v
+		tgt[key] = cp
 	default:
-		tgt[key] = p.Value
+		tgt[key] = cloneViaYAML[any](p.Value)
 	}
 
 	return nil
