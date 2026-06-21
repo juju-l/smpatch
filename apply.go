@@ -9,9 +9,9 @@ func Apply(
 ) error {
 
 	// ✅ 深拷贝到 tgt（不是赋值给局部变量）
-	for k, v := range DeepCopy(src).(map[string]any) {
-		tgt[k] = v
-	}
+	// for k, v := range DeepCopy(src).(map[string]any) {
+	// 	tgt[k] = v
+	// }
 
 	for _, p := range patches {
 		switch {
