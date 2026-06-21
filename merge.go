@@ -19,7 +19,7 @@ func applyMerge(
 	//
 	// scalar 数组
 	if p.ItemOps != "" {
-	return applyItemOps(existing, p)
+	return applyItemOps(existing, p, parent, key)
 	}
 	//
 	// map 递归 merge
@@ -73,12 +73,18 @@ func mergeStructArray(existing any, p PatchOp) error {
 //
 
 // ---- scalar 数组（itemOps） ----
-func applyItemOps(existing any, p PatchOp) error {
+func applyItemOps(existing any, p PatchOp, parent map[string]any, key string) error {
 	arr, ok := existing.([]any)
 	if !ok {
 	return fmt.Errorf("itemOps requires array")
 	}
 	vals := toSlice(p.Value)
+	// ✅ 数值归一化（仅用于 scalar 数组）
+	normalized := make([]any, len(vals))
+	for i, v := range vals {
+	normalized[i] = normalizeNumber(v)
+	}
+	//
 	switch p.ItemOps {
 	case "add":
 	for _, v := range vals {
@@ -104,9 +110,11 @@ func applyItemOps(existing any, p PatchOp) error {
 	return fmt.Errorf("unknown itemOps: %s", p.ItemOps)
 	//
 	}
+	//
+	parent[key] = arr
 	return nil
 }
-//func
+// func
 
 // func ---- mixed 数组 ----
 
@@ -137,6 +145,20 @@ func deepMerge(dst, src map[string]any) {
 	}
 }
 //
+
+func normalizeNumber(v any) any {
+	switch t := v.(type) {
+	case int, int32, int64, float32:
+	return float64(t.(float32))
+	case float64:
+	return t
+	default:
+	return v
+	//
+	}
+}
+
+// func
 
 func init() {
 	///**

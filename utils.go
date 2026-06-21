@@ -18,6 +18,8 @@ func isSlice(v any) bool {
 	return ok
 }
 
+// func isMixed
+
 func contains(arr []any, v any) bool {
 	//
 	for _, a := range arr {
@@ -38,6 +40,8 @@ func filter(arr []any, fn func(any) bool) []any {
 	return out
 }
 
+// func AnyWhere https://pkg.go.dev/slices
+
 func toSlice(v any) []any {
 	//
 	if s, ok := v.([]any); ok {
@@ -45,8 +49,6 @@ func toSlice(v any) []any {
 	}
 	return []any{v}
 }
-
-// func
 
 func joinPath(prefix, key string) string {
 	//

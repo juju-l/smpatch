@@ -54,9 +54,7 @@ func applyDel(
 	return !contains(vals, v)
 	})
 	//
-	if true {
 	parent[key] = arr
-	}
 	return nil
 	}
 	//
