@@ -1,6 +1,10 @@
 package smpatch
 
-import "strings"
+import (
+	"fmt"
+	"slices"
+	"strings"
+)
 
 func itemOps(
 	p *Patch,
@@ -15,74 +19,51 @@ func itemOps(
 	key := parts[len(parts)-1]
 
 	arr := cur[key].([]any)
-	vals := p.Value.([]any)
+
+	// ✅ 强制 Value 必须是数组
+	vals, ok := p.Value.([]any)
+	if !ok {
+		return fmt.Errorf("itemOps %s requires value to be array", p.ItemOps)
+	}
 
 	switch p.ItemOps {
+
 	case "add":
 		for _, v := range vals {
-			found := false
-			for _, e := range arr {
-				if e == v {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.Contains(arr, v) {
 				arr = append(arr, v)
 			}
 		}
 
 	case "remove":
-		newArr := []any{}
-		for _, v := range arr {
-			hit := false
-			for _, r := range vals {
-				if v == r {
-					hit = true
-					break
-				}
-			}
-			if !hit {
-				newArr = append(newArr, v)
-			}
-		}
-		arr = newArr
+		arr = slices.DeleteFunc(arr, func(v any) bool {
+			return slices.Contains(vals, v)
+		})
 
 	case "replace":
+		if p.Old == nil {
+			return fmt.Errorf("itemOps replace requires old")
+		}
+		oldVal, ok := p.Old.(any)
+		if !ok {
+			return fmt.Errorf("itemOps replace old must match array element type")
+		}
 		for i, v := range arr {
-			if v == p.Old {
-				arr[i] = p.Value
+			if v == oldVal {
+				arr[i] = vals[0]
 				break
 			}
 		}
 
 	case "keep":
-		newArr := []any{}
-		for _, v := range arr {
-			for _, k := range vals {
-				if v == k {
-					newArr = append(newArr, v)
-					break
-				}
-			}
-		}
-		arr = newArr
+		arr = slices.DeleteFunc(arr, func(v any) bool {
+			return !slices.Contains(vals, v)
+		})
 
 	case "disable":
-		newArr := []any{}
-		for _, v := range arr {
-			hit := false
-			for _, d := range vals {
-				if v == d {
-					hit = true
-					break
-				}
-			}
-			if !hit {
-				newArr = append(newArr, v)
-			}
-		}
-		arr = newArr
+		arr = slices.DeleteFunc(arr, func(v any) bool {
+			return slices.Contains(vals, v)
+		})
 	}
 
 	tgt[key] = arr
