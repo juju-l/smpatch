@@ -13,7 +13,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 	for i := 0; i < len(parts)-1; i++ {
 		part := parts[i]
 
-		// ✅ 表达式 segment：只用于 struct 数组筛选
+		// ✅ 表达式 segment：struct 数组筛选
 		if strings.Contains(part, "==") ||
 			strings.Contains(part, "!=") ||
 			strings.Contains(part, "&&") ||
@@ -47,7 +47,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 			continue
 		}
 
-		// ✅ 普通路径（必须已经是 struct）
+		// ✅ 普通路径
 		next, ok := cur[part].(map[string]any)
 		if !ok {
 			return fmt.Errorf("path segment '%s' is not a struct", part)
@@ -102,18 +102,23 @@ func evalSimpleExpr(obj map[string]any, expr string) bool {
 	}
 	if strings.Contains(expr, "&&") {
 		parts := strings.SplitN(expr, "&&", 2)
-		return evalSimpleExpr(obj, parts[0]) && evalSimpleExpr(obj, parts[1])
+		return evalSimpleExpr(obj, parts[0]) &&
+			evalSimpleExpr(obj, parts[1])
 	}
 	if strings.Contains(expr, "||") {
 		parts := strings.SplitN(expr, "||", 2)
-		return evalSimpleExpr(obj, parts[0]) || evalSimpleExpr(obj, parts[1])
+		return evalSimpleExpr(obj, parts[0]) ||
+			evalSimpleExpr(obj, parts[1])
 	}
+
 	kv := strings.SplitN(expr, "=", 2)
 	if len(kv) != 2 {
 		return false
 	}
+
 	actual := fmt.Sprint(obj[kv[0]])
 	want := kv[1]
+
 	if kv[0] == "!" {
 		return actual != want
 	}
