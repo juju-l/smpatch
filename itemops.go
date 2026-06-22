@@ -1,12 +1,10 @@
-package smpatch//
+package smpatch
 
 import (
-	"fmt"//
+	"fmt"
 	"strings"
 	"slices"
 )
-
-///** func
 
 func itemOps(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
@@ -17,6 +15,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 
 		// ✅ 表达式路径段
 		if strings.Contains(part, "==") ||
+			strings.Contains(part, "!=") ||
 			strings.Contains(part, "&&") ||
 			strings.Contains(part, "||") ||
 			strings.HasPrefix(part, "!") {
@@ -44,7 +43,15 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				)
 			}
 
-			cur = matches[0].(map[string]any)
+			m, ok := matches[0].(map[string]any)
+			if !ok {
+				return fmt.Errorf(
+					"expr '%s' resolved to non-struct (got %T)",
+					part, matches[0],
+				)
+			}
+
+			cur = m
 			continue
 		}
 
@@ -52,7 +59,21 @@ func itemOps(p *Patch, tgt map[string]any) error {
 		if cur[part] == nil {
 			cur[part] = map[string]any{}
 		}
-		cur = cur[part].(map[string]any)
+		switch v := cur[part].(type) {
+		case map[string]any:
+			cur = v
+		case []any:
+			// ✅ 数组不能作为下一层路径，直接报错
+			return fmt.Errorf(
+				"path segment '%s' is an array, cannot descend further",
+				part,
+			)
+		default:
+			return fmt.Errorf(
+				"unexpected type at path segment '%s': %T",
+				part, cur[part],
+			)
+		}
 	}
 
 	key := parts[len(parts)-1]
