@@ -13,10 +13,8 @@ func itemOps(p *Patch, tgt map[string]any) error {
 
 	var walk func(cur any, idx int) error
 	walk = func(cur any, idx int) error {
-		// ✅ 到达最后一个 segment：执行 itemOps
+		// ✅ 最后一个 segment：执行 itemOps
 		if idx == len(parts)-1 {
-			// 最后一个 segment 一定是数组字段名
-			// 比如 "members"
 			if m, ok := cur.(map[string]any); ok {
 				arr, ok := m[parts[idx]].([]any)
 				if !ok {
@@ -124,8 +122,27 @@ func isExpr(s string) bool {
 		strings.HasPrefix(s, "!")
 }
 
+// ✅ 关键修复：递归处理 && / || 两边
 func normalizeExpr(expr string) string {
-	// == / !=
+	// 处理 ! 前缀
+	if strings.HasPrefix(expr, "!") {
+		inner := strings.TrimPrefix(expr, "!")
+		return "!(" + normalizeExpr(inner) + ")"
+	}
+
+	// 处理 &&
+	if strings.Contains(expr, "&&") {
+		parts := strings.SplitN(expr, "&&", 2)
+		return normalizeExpr(parts[0]) + " && " + normalizeExpr(parts[1])
+	}
+
+	// 处理 ||
+	if strings.Contains(expr, "||") {
+		parts := strings.SplitN(expr, "||", 2)
+		return normalizeExpr(parts[0]) + " || " + normalizeExpr(parts[1])
+	}
+
+	// 处理 == / !=
 	for _, op := range []string{"==", "!="} {
 		parts := strings.SplitN(expr, op, 2)
 		if len(parts) == 2 {
@@ -136,5 +153,6 @@ func normalizeExpr(expr string) string {
 			}
 		}
 	}
+
 	return expr
 }
