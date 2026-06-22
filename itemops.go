@@ -11,58 +11,73 @@ import (
 func itemOps(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
 
-	// ✅ inline 递归 walk
 	var walk func(cur any, idx int) error
 	walk = func(cur any, idx int) error {
-		// 到达最后一个 segment → 执行 itemOps
+		// ✅ 到达最后一个 segment：执行 itemOps
 		if idx == len(parts)-1 {
-			arr := DeepCopy(cur).([]any)
-			vals := p.Value.([]any)
+			// 最后一个 segment 一定是数组字段名
+			// 比如 "members"
+			if m, ok := cur.(map[string]any); ok {
+				arr, ok := m[parts[idx]].([]any)
+				if !ok {
+					return fmt.Errorf("target field '%s' must be array", parts[idx])
+				}
 
-			switch p.ItemOps {
-			case "add":
-				for _, v := range vals {
-					if !slices.Contains(arr, v) {
-						arr = append(arr, v)
+				vals := p.Value.([]any)
+				switch p.ItemOps {
+				case "add":
+					for _, v := range vals {
+						if !slices.Contains(arr, v) {
+							arr = append(arr, v)
+						}
 					}
-				}
-			case "remove":
-				arr = slices.DeleteFunc(arr, func(v any) bool {
-					return slices.Contains(vals, v)
-				})
-			case "replace":
-				for i, v := range arr {
-					if v == p.Old {
-						arr[i] = vals[0]
-						break
+				case "remove":
+					arr = slices.DeleteFunc(arr, func(v any) bool {
+						return slices.Contains(vals, v)
+					})
+				case "replace":
+					for i, v := range arr {
+						if v == p.Old {
+							arr[i] = vals[0]
+							break
+						}
 					}
+				case "keep":
+					arr = slices.DeleteFunc(arr, func(v any) bool {
+						return !slices.Contains(vals, v)
+					})
+				case "disable":
+					arr = slices.DeleteFunc(arr, func(v any) bool {
+						return slices.Contains(vals, v)
+					})
 				}
-			case "keep":
-				arr = slices.DeleteFunc(arr, func(v any) bool {
-					return !slices.Contains(vals, v)
-				})
-			case "disable":
-				arr = slices.DeleteFunc(arr, func(v any) bool {
-					return slices.Contains(vals, v)
-				})
+
+				m[parts[idx]] = arr
+				return nil
 			}
-			// 回溯：把结果写回父级
-			// 这里 cur 已经是目标数组，直接返回
-			return nil
+			return fmt.Errorf("unexpected type at final segment: %T", cur)
 		}
 
 		part := parts[idx]
 
-		// 当前层级一定是 struct 数组（大前提）
-		arr, ok := cur.([]any)
-		if !ok {
-			return fmt.Errorf("expected array at segment '%s', got %T", part, cur)
+		// ✅ map → 普通路径
+		if m, ok := cur.(map[string]any); ok {
+			next, ok := m[part]
+			if !ok {
+				return fmt.Errorf("path segment '%s' not found", part)
+			}
+			return walk(next, idx+1)
 		}
 
-		// 判断是否为表达式 segment
-		if isExpr(part) {
-			// 编译表达式
-			program, err := expr.Compile(part, expr.Env(map[string]any{
+		// ✅ array → 必须是表达式
+		if arr, ok := cur.([]any); ok {
+			if !isExpr(part) {
+				return fmt.Errorf("array segment '%s' must be expr", part)
+			}
+
+			exprStr := normalizeExpr(part)
+
+			program, err := expr.Compile(exprStr, expr.Env(map[string]any{
 				"role": "",
 				"env":  "",
 			}))
@@ -70,7 +85,6 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				return fmt.Errorf("invalid expr '%s': %w", part, err)
 			}
 
-			// 筛选
 			var matches []any
 			for _, e := range arr {
 				m, ok := e.(map[string]any)
@@ -86,7 +100,6 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				}
 			}
 
-			// 唯一性校验
 			if len(matches) != 1 {
 				return fmt.Errorf(
 					"expr '%s' matched %d elements, require exactly 1",
@@ -94,27 +107,34 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				)
 			}
 
-			// 唯一匹配 → 继续 walk 下一个 segment
 			return walk(matches[0], idx+1)
 		}
 
-		// 非表达式：按普通路径处理
-		// 找到名为 part 的字段（在 struct 数组中，这意味着 part 是字段名，需要是单个 struct）
-		// 但按 PathKey 语义，非表达式 segment 应该是 struct 的字段名
-		// 这里 cur 是数组，part 是字段名 → 需要先在数组中定位，再取字段
-		// 按你的设计：非表达式 segment 不会出现在数组层，所以这里应该是 struct
-		return fmt.Errorf("unexpected non-expr segment '%s' in array context", part)
+		return fmt.Errorf("unexpected type at segment '%s': %T", part, cur)
 	}
 
-	// 启动递归
 	return walk(tgt, 0)
 }
 
-// isExpr 判断 segment 是否为表达式
-func isExpr(segment string) bool {
-	return strings.Contains(segment, "==") ||
-		strings.Contains(segment, "!=") ||
-		strings.Contains(segment, "&&") ||
-		strings.Contains(segment, "||") ||
-		strings.HasPrefix(segment, "!")
+func isExpr(s string) bool {
+	return strings.Contains(s, "==") ||
+		strings.Contains(s, "!=") ||
+		strings.Contains(s, "&&") ||
+		strings.Contains(s, "||") ||
+		strings.HasPrefix(s, "!")
+}
+
+func normalizeExpr(expr string) string {
+	// == / !=
+	for _, op := range []string{"==", "!="} {
+		parts := strings.SplitN(expr, op, 2)
+		if len(parts) == 2 {
+			left := strings.TrimSpace(parts[0])
+			right := strings.TrimSpace(parts[1])
+			if right != "" && right[0] != '"' && right[0] != '\'' {
+				return left + " " + op + " \"" + right + "\""
+			}
+		}
+	}
+	return expr
 }
