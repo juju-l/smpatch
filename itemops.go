@@ -13,7 +13,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 	for i := 0; i < len(parts)-1; i++ {
 		part := parts[i]
 
-		// ✅ 表达式路径段
+		// ✅ 表达式 segment：只用于 struct 数组筛选
 		if strings.Contains(part, "==") ||
 			strings.Contains(part, "!=") ||
 			strings.Contains(part, "&&") ||
@@ -22,7 +22,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 
 			arr, ok := cur[part].([]any)
 			if !ok {
-				return fmt.Errorf("expr target is not array")
+				return fmt.Errorf("expr target '%s' is not array", part)
 			}
 
 			var matches []any
@@ -43,37 +43,16 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				)
 			}
 
-			m, ok := matches[0].(map[string]any)
-			if !ok {
-				return fmt.Errorf(
-					"expr '%s' resolved to non-struct (got %T)",
-					part, matches[0],
-				)
-			}
-
-			cur = m
+			cur = matches[0].(map[string]any)
 			continue
 		}
 
-		// ✅ 普通路径
-		if cur[part] == nil {
-			cur[part] = map[string]any{}
+		// ✅ 普通路径（必须已经是 struct）
+		next, ok := cur[part].(map[string]any)
+		if !ok {
+			return fmt.Errorf("path segment '%s' is not a struct", part)
 		}
-		switch v := cur[part].(type) {
-		case map[string]any:
-			cur = v
-		case []any:
-			// ✅ 数组不能作为下一层路径，直接报错
-			return fmt.Errorf(
-				"path segment '%s' is an array, cannot descend further",
-				part,
-			)
-		default:
-			return fmt.Errorf(
-				"unexpected type at path segment '%s': %T",
-				part, cur[part],
-			)
-		}
+		cur = next
 	}
 
 	key := parts[len(parts)-1]
@@ -118,34 +97,23 @@ func init() {
 }
 
 func evalSimpleExpr(obj map[string]any, expr string) bool {
-	// !role==admin
 	if strings.HasPrefix(expr, "!") {
 		return !evalSimpleExpr(obj, expr[1:])
 	}
-
-	// role==admin && env==prod
 	if strings.Contains(expr, "&&") {
 		parts := strings.SplitN(expr, "&&", 2)
-		return evalSimpleExpr(obj, parts[0]) &&
-			evalSimpleExpr(obj, parts[1])
+		return evalSimpleExpr(obj, parts[0]) && evalSimpleExpr(obj, parts[1])
 	}
-
-	// role==admin || role==editor
 	if strings.Contains(expr, "||") {
 		parts := strings.SplitN(expr, "||", 2)
-		return evalSimpleExpr(obj, parts[0]) ||
-			evalSimpleExpr(obj, parts[1])
+		return evalSimpleExpr(obj, parts[0]) || evalSimpleExpr(obj, parts[1])
 	}
-
-	// role==admin / role!=admin
 	kv := strings.SplitN(expr, "=", 2)
 	if len(kv) != 2 {
 		return false
 	}
-
 	actual := fmt.Sprint(obj[kv[0]])
 	want := kv[1]
-
 	if kv[0] == "!" {
 		return actual != want
 	}
