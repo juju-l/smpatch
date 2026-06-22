@@ -13,16 +13,15 @@ func itemOps(p *Patch, tgt map[string]any) error {
 	for i := 0; i < len(parts)-1; i++ {
 		part := parts[i]
 
-		// ✅ 表达式 segment：struct 数组筛选
-		if strings.Contains(part, "==") ||
-			strings.Contains(part, "!=") ||
-			strings.Contains(part, "&&") ||
-			strings.Contains(part, "||") ||
-			strings.HasPrefix(part, "!") {
+		// ✅ 当前是数组，且下一段是表达式 → 筛选
+		if arr, ok := cur[part].([]any); ok {
+			if i+1 >= len(parts) {
+				return fmt.Errorf("unexpected end of path after array")
+			}
 
-			arr, ok := cur[part].([]any)
-			if !ok {
-				return fmt.Errorf("expr target '%s' is not array", part)
+			exprPart := parts[i+1]
+			if !strings.ContainsAny(exprPart, "=&|!") {
+				return fmt.Errorf("array segment '%s' must be followed by expr", part)
 			}
 
 			var matches []any
@@ -31,7 +30,7 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				if !ok {
 					continue
 				}
-				if evalSimpleExpr(m, part) {
+				if evalSimpleExpr(m, exprPart) {
 					matches = append(matches, e)
 				}
 			}
@@ -39,15 +38,16 @@ func itemOps(p *Patch, tgt map[string]any) error {
 			if len(matches) != 1 {
 				return fmt.Errorf(
 					"expr '%s' matched %d elements, require exactly 1",
-					part, len(matches),
+					exprPart, len(matches),
 				)
 			}
 
 			cur = matches[0].(map[string]any)
+			i++ // ✅ 跳过已处理的表达式段
 			continue
 		}
 
-		// ✅ 普通路径
+		// ✅ 普通 struct 路径
 		next, ok := cur[part].(map[string]any)
 		if !ok {
 			return fmt.Errorf("path segment '%s' is not a struct", part)
@@ -100,29 +100,44 @@ func evalSimpleExpr(obj map[string]any, expr string) bool {
 	if strings.HasPrefix(expr, "!") {
 		return !evalSimpleExpr(obj, expr[1:])
 	}
+
 	if strings.Contains(expr, "&&") {
 		parts := strings.SplitN(expr, "&&", 2)
 		return evalSimpleExpr(obj, parts[0]) &&
 			evalSimpleExpr(obj, parts[1])
 	}
+
 	if strings.Contains(expr, "||") {
 		parts := strings.SplitN(expr, "||", 2)
 		return evalSimpleExpr(obj, parts[0]) ||
 			evalSimpleExpr(obj, parts[1])
 	}
 
-	kv := strings.SplitN(expr, "=", 2)
-	if len(kv) != 2 {
+	// ✅ 正确解析 == / !=
+	eq := strings.Index(expr, "==")
+	ne := strings.Index(expr, "!=")
+
+	var key, op, want string
+	if eq != -1 {
+		key = expr[:eq]
+		op = "=="
+		want = expr[eq+2:]
+	} else if ne != -1 {
+		key = expr[:ne]
+		op = "!="
+		want = expr[ne+2:]
+	} else {
 		return false
 	}
 
-	actual := fmt.Sprint(obj[kv[0]])
-	want := kv[1]
-
-	if kv[0] == "!" {
+	actual := fmt.Sprint(obj[key])
+	switch op {
+	case "==":
+		return actual == want
+	case "!=":
 		return actual != want
 	}
-	return actual == want
+	return false
 }
 
 // struct
