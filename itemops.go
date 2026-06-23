@@ -2,14 +2,18 @@ package smpatch
 
 import (
 	"fmt"
-	"strings"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/expr-lang/expr"
 )
 
 func itemOps(p *Patch, tgt map[string]any) error {
 	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/")
+
+	// ✅ 表达式正则（inline，不单独函数）
+	exprRe := regexp.MustCompile(`(==|!=|&&|\|\||!)`)
 
 	var walk func(cur any, idx int) error
 	walk = func(cur any, idx int) error {
@@ -67,20 +71,10 @@ func itemOps(p *Patch, tgt map[string]any) error {
 			return walk(next, idx+1)
 		}
 
-		// ✅ array → 必须是表达式
+		// ✅ array → 判断是否为表达式
 		if arr, ok := cur.([]any); ok {
-			if !isExpr(part) {
+			if !exprRe.MatchString(part) {
 				return fmt.Errorf("array segment '%s' must be expr", part)
-			}
-
-			exprStr := normalizeExpr(part)
-
-			program, err := expr.Compile(exprStr, expr.Env(map[string]any{
-				"role": "",
-				"env":  "",
-			}))
-			if err != nil {
-				return fmt.Errorf("invalid expr '%s': %w", part, err)
 			}
 
 			var matches []any
@@ -89,15 +83,24 @@ func itemOps(p *Patch, tgt map[string]any) error {
 				if !ok {
 					continue
 				}
+
+				// ✅ 运行时 Env（无字段硬编码）
+				program, err := expr.Compile(part, expr.Env(m))
+				if err != nil {
+					return fmt.Errorf("invalid expr '%s': %w", part, err)
+				}
+
 				out, err := expr.Run(program, m)
 				if err != nil {
 					return fmt.Errorf("expr eval error: %w", err)
 				}
+
 				if b, ok := out.(bool); ok && b {
 					matches = append(matches, e)
 				}
 			}
 
+			// ✅ 唯一性铁律
 			if len(matches) != 1 {
 				return fmt.Errorf(
 					"expr '%s' matched %d elements, require exactly 1",
@@ -112,47 +115,4 @@ func itemOps(p *Patch, tgt map[string]any) error {
 	}
 
 	return walk(tgt, 0)
-}
-
-func isExpr(s string) bool {
-	return strings.Contains(s, "==") ||
-		strings.Contains(s, "!=") ||
-		strings.Contains(s, "&&") ||
-		strings.Contains(s, "||") ||
-		strings.HasPrefix(s, "!")
-}
-
-// ✅ 关键修复：递归处理 && / || 两边
-func normalizeExpr(expr string) string {
-	// 处理 ! 前缀
-	if strings.HasPrefix(expr, "!") {
-		inner := strings.TrimPrefix(expr, "!")
-		return "!(" + normalizeExpr(inner) + ")"
-	}
-
-	// 处理 &&
-	if strings.Contains(expr, "&&") {
-		parts := strings.SplitN(expr, "&&", 2)
-		return normalizeExpr(parts[0]) + " && " + normalizeExpr(parts[1])
-	}
-
-	// 处理 ||
-	if strings.Contains(expr, "||") {
-		parts := strings.SplitN(expr, "||", 2)
-		return normalizeExpr(parts[0]) + " || " + normalizeExpr(parts[1])
-	}
-
-	// 处理 == / !=
-	for _, op := range []string{"==", "!="} {
-		parts := strings.SplitN(expr, op, 2)
-		if len(parts) == 2 {
-			left := strings.TrimSpace(parts[0])
-			right := strings.TrimSpace(parts[1])
-			if right != "" && right[0] != '"' && right[0] != '\'' {
-				return left + " " + op + " \"" + right + "\""
-			}
-		}
-	}
-
-	return expr
 }

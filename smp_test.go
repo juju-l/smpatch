@@ -22,7 +22,7 @@ func TestItemOps_Expr_Equal(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role==admin/members",
+			PathKey: `/spec/bindings/role=="admin"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -50,7 +50,7 @@ func TestItemOps_Expr_Equal(t *testing.T) {
 // 	patches := []*Patch{
 // 		{
 // 			Ope:     "merge",
-// 			PathKey: "/spec/bindings/role!=viewer/members",
+// 			PathKey: `/spec/bindings/role!="viewer"/members`,
 // 			ItemOps: "remove",
 // 			Value:   []any{1},
 // 		},
@@ -78,7 +78,7 @@ func TestItemOps_Expr_Equal(t *testing.T) {
 // 	patches := []*Patch{
 // 		{
 // 			Ope:     "merge",
-// 			PathKey: "/spec/bindings/role==admin && env==prod/members",
+// 			PathKey: `/spec/bindings/role=="admin" && "env==prod"/members`,
 // 			ItemOps: "remove",
 // 			Value:   []any{1},
 // 		},
@@ -106,7 +106,7 @@ func TestItemOps_Expr_Or(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role==admin || role==editor/members",
+			PathKey: `/spec/bindings/role=="admin" || role=="editor"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -134,7 +134,7 @@ func TestItemOps_Expr_NotPrefix(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/!role==viewer/members",
+			PathKey: `/spec/bindings/!(role=="viewer")/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -161,7 +161,7 @@ func TestItemOps_Expr_NoMatch(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role==nonexistent/members",
+			PathKey: `/spec/bindings/role==nonexistent/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -185,7 +185,7 @@ func TestItemOps_Expr_NoMatch(t *testing.T) {
 // 	patches := []*Patch{
 // 		{
 // 			Ope:     "merge",
-// 			PathKey: "/spec/bindings/role==admin/members",
+// 			PathKey: `/spec/bindings/role=="admin"/members`,
 // 			ItemOps: "remove",
 // 			Value:   []any{1},
 // 		},
@@ -208,7 +208,7 @@ func TestItemOps_Expr_InvalidSyntax(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role===admin/members",
+			PathKey: `/spec/bindings/role==="admin"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -413,7 +413,7 @@ func TestItemOps_Expr_And(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role==admin && env==prod/members",
+			PathKey: `/spec/bindings/role=="admin" && env=="prod"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -449,7 +449,7 @@ func TestItemOps_Expr_NotUnique(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role==admin/members",
+			PathKey: `/spec/bindings/role=="admin"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -481,7 +481,7 @@ func TestItemOps_Expr_NotEqual(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: "/spec/bindings/role!=viewer/members",
+			PathKey: `/spec/bindings/role!="viewer"/members`,
 			ItemOps: "remove",
 			Value:   []any{1},
 		},
@@ -539,6 +539,30 @@ func TestApply_Delete_Field(t *testing.T) {
 	}
 	if _, ok := tgt["spec"].(map[string]any)["add"]; ok {
 		t.Fatalf("delete field failed")
+	}
+}
+
+func TestItemOps_Expr_Grouping(t *testing.T) {
+	src := map[string]any{
+		"spec": map[string]any{
+			"bindings": []any{
+				map[string]any{"role": "adm", "env": "dev", "members": []any{1, 2}},
+				map[string]any{"role": "viewer", "env": "prod", "members": []any{3, 4}},
+			},
+		},
+	}
+	tgt := DeepCopy(src).(map[string]any)
+
+	patches := []*Patch{
+		{
+			Ope:     "merge",
+			PathKey: `/spec/bindings/role=="adm" && (env=="dev" || role=="gggg")/members`,
+			ItemOps: "remove",
+			Value:   []any{1},
+		},
+	}
+	if err := Apply(src, patches, tgt); err != nil {
+		t.Fatalf("Apply failed: %v", err)
 	}
 }
 
