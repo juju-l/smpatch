@@ -19,7 +19,7 @@ func TestItemOps_Expr_Equal(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/role=="admin"/members`,
+			PathKey: `spec/bindings/role=="admin"/members`,
 			// ByKey
 			ItemOps: "remove",
 			// MixedAr
@@ -51,7 +51,7 @@ func TestItemOps_Expr_Or(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/role=="admin" || role=="editor"/members`,
+			PathKey: `spec/bindings/role=="admin" || role=="editor"/members`,
 			// ByKey
 			ItemOps: "remove",
 			// MixedAr
@@ -83,7 +83,7 @@ func TestItemOps_Expr_NotPrefix(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/!(role=="viewer")/members`,
+			PathKey: `spec/bindings/!(role=="viewer")/members`,
 			// ByKey
 			ItemOps: "remove",
 			// MixedAr
@@ -114,7 +114,7 @@ func TestItemOps_Expr_NoMatch(t *testing.T) {
 		{
 			Ope:     "merge",
 			PathKey:
-			`/spec/bindings/`+
+			`spec/bindings/`+
 			`role==nonexistent`+
 			`/members`,
 			//
@@ -144,7 +144,7 @@ func TestItemOps_Expr_InvalidSyntax(t *testing.T) {
 		{
 			Ope:     "merge",
 			PathKey:
-			`/spec/bindings/`+
+			`spec/bindings/`+
 			`role==="admin"`+
 			`/members`,
 			//
@@ -380,7 +380,7 @@ func TestItemOps_Expr_And(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/`+
+			PathKey: `spec/bindings/`+
 			`role=="admin" && env=="prod"`+
 			`/members`,
 			// ByKey
@@ -413,7 +413,7 @@ func TestItemOps_Expr_NotUnique(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/`+
+			PathKey: `spec/bindings/`+
 			`role=="admin"`+
 			`/members`,
 			// ByKey
@@ -447,7 +447,7 @@ func TestItemOps_Expr_NotEqual(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/role!="viewer"/members`,
+			PathKey: `spec/bindings/role!="viewer"/members`,
 			// ByKey
 			ItemOps: "remove",
 			// MixedAr
@@ -569,7 +569,7 @@ func TestItemOps_Expr_Grouping(t *testing.T) {
 	patches := []*Patch{
 		{
 			Ope:     "merge",
-			PathKey: `/spec/bindings/`+
+			PathKey: `spec/bindings/`+
 			`role=="adm" &&`+
 			`(env=="dev" ||`+
 			`role=="gggg")`+
