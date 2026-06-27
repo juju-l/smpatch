@@ -15,6 +15,9 @@ func Apply(
 	// var err error
 
 	for _, p := range patches {
+			if p.PathKey == "" {
+	return fmt.Errorf("PathKey cannot be empty (root-level operation is not supported)")
+			} else if true {
 	switch {
 	case p.Ope == "delete":
 	if err := applyDel(p, tgt); err != nil {
@@ -62,6 +65,9 @@ func Apply(
 	return fmt.Errorf("unknown ope: %s", p.Ope) // /// //
 	  //
 	}
+			} else {
+	// ... //
+			}
 	}
 
 	return nil//

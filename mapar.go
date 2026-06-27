@@ -1,9 +1,7 @@
 package smpatch//
 
 import (
-	"strings"
-	. "slices"
-	//
+	"strings" //
 )
 
 ///** func
@@ -38,29 +36,15 @@ func mapAr(
 
 	for _, v := range p.Value.([]any) {
 	m := v.(map[string]any)
-	k := m[p.ByKey]
+	k := m[p.ByKey] //
 	found := false
 
 	for _, e := range arr {
 	if e.(map[string]any)[p.ByKey] == k {
-	//
-	// ✅ 只 merge，不替换
-	for mk, mv := range m {
-	if mk == "members" {
-	// ✅ 数组合并
-	oldMembers := e.(map[string]any)["members"].([]any) ///
-	newMembers := mv.([]any)
-	for _, nm := range newMembers {
-	if !Contains(oldMembers, nm) {
-	oldMembers = append(oldMembers, nm)
-	}
-	}
-	e.(map[string]any)["members"] = oldMembers
-	} else {
-	e.(map[string]any)[mk] = mv
-	}
-	}
 	found = true
+	for mky, mvl := range m {
+	e.(map[string]any)[mky] = mvl /// ✅ 整体 merge：Value 有的字段覆盖，没有的保留
+	}
 	break
 	}
 	}

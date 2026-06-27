@@ -66,7 +66,7 @@ patches:
     byKey: string
     itemOps: add | remove | keep | replace | disable
     mixedAr: bool
-    value: any
+    value: any //必须是数组，就算只有一个，也需要是数组的格式
     old: any
 ```
 
@@ -217,3 +217,13 @@ status:
 
 如需继续推进，可直接指定：  
 **“我要 CRD Schema / Go Controller / 安全策略示例”**
+
+备注：
+
+| 数组类型 | 操作 | 代码路径 | 状态 |
+|---|---|---|---|
+| struct | merge | `apply.go` → `mapAr` | ✅ |
+| struct | delete | `apply.go` → `applyDel` | ✅ |
+| scalar | add / remove / replace / keep / disable | `apply.go` → `itemOps`（表达式筛选） | ✅ |
+| mixed | replace | `apply.go` → `mixed` | ✅ |
+| map（非数组） | merge | `apply.go` → `dpMeg` | ✅ |

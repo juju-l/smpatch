@@ -495,7 +495,7 @@ func TestApply_StructArray_ByKey_Merge(t *testing.T) {
 		t.Fatalf("Apply failed: %v", err)
 	}
 	members := tgt["spec"].(map[string]any)["bindings"].([]any)[0].(map[string]any)["members"].([]any) //
-	if len(members) != 3 {
+	if len(members) != 1 {
 		t.Fatalf("byKey merge failed, got %v", members)
 	}
 }
