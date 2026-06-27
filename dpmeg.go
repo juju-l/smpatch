@@ -15,7 +15,9 @@ func dpMeg(
 	// var err error
 
 	parts := strings.FieldsFunc(
-	p.PathKey,func(r rune) bool { return r == '/' }, ////
+	p.PathKey,func(
+	r rune,
+	) bool { return r == '/' }, ////
 	)
 
 	cur := tgt
@@ -24,7 +26,9 @@ func dpMeg(
 	if cur[parts[i]] == nil {
 	cur[parts[i]] = map[string]any{}
 	}
-	cur = cur[parts[i]].(map[string]any)
+	cur = 
+	cur[parts[i]].
+	(map[string]any)
 	}
 	key := parts[len(parts)-1]
 
@@ -33,11 +37,11 @@ func dpMeg(
 			//
 	  //
 	case map[string]any:
-	cp := DeepCopy(v).(map[string]any)
-	for mk, mv := range p.Value.(map[string]any) {
-	cp[mk] = mv
+	cpy := DeepCopy(v).(map[string]any)
+	for mky, mvl := range p.Value.(map[string]any) {
+	cpy[mky] = mvl
 	}
-	cur[key] = cp
+	cur[key] = cpy
 	  //
 	default:
 	cur[key] = DeepCopy(p.Value)
