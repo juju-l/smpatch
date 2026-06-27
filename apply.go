@@ -59,7 +59,7 @@ func Apply(
 			//
 	  //
 	default: //*
-	return fmt.Errorf("unknown ope: %s", p.Ope) ///
+	return fmt.Errorf("unknown ope: %s", p.Ope) // /// //
 	  //
 	}
 	}

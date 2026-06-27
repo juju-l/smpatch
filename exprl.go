@@ -42,7 +42,9 @@ func exprl(
 	}
 	//
 	if b, ok := out.(bool); ok && b {
-	*matches = append(*matches, e)
+	*matches = append(
+	*matches, e,
+	)
 	}
 	}
 
