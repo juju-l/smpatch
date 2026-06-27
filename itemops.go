@@ -2,7 +2,7 @@ package smpatch//
 
 import (
 	"regexp"
-	"slices"
+	//"slices"//
 	"strings"
 	"github.com/expr-lang/expr"
 	"fmt" //
@@ -29,25 +29,7 @@ func itemOps(
 	walk = func(cur any, idx int) error {
 		// ✅ 最后一个 segment：执行 itemOps
 		if idx == len(parts)-1 {
-			//
-			if m, ok := cur.(map[string]any); ok {
-			arr, ok := m[parts[idx]].([]any)
-			if !ok {
-				return fmt.Errorf("target field '%s' must be array", parts[idx])
-			}
-			vals := p.Value.([]any);
-			switch p.ItemOps {
-			case "add": for _, v := range vals { if !slices.Contains(arr, v) { arr = append(arr, v) } }; /**/
-			case "remove": arr = slices.DeleteFunc(arr, func(v any) bool { return slices.Contains(vals, v) }); /**/
-			case "replace": for i, v := range arr { if v == p.Old { /**/; arr[i] = vals[0]; break } }; /**/
-			case "keep": arr = slices.DeleteFunc(arr, func(v any) bool { return !slices.Contains(vals, v) }); /**/
-			case "disable": arr = slices.DeleteFunc(arr, func(v any) bool { return slices.Contains(vals, v) }); /**/
-			};
-			/**/
-			m[parts[idx]] = arr
-			return nil
-			}
-			return fmt.Errorf("unexpected type at final segment: %T", cur)
+			return ictrler(p, cur, parts[idx])
 		}
 		//
 
