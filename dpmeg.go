@@ -39,7 +39,7 @@ func dpMeg(
 	case map[string]any:
 	cpy := DeepCopy(v).(map[string]any)
 	for mky, mvl := range p.Value.(map[string]any) {
-	cpy[mky] = mvl
+	cpy[mky] = DeepCopy(mvl)
 	}
 	cur[key] = cpy
 	  //
