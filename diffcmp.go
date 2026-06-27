@@ -11,7 +11,7 @@ func DiffCmp(
 	patches []*Patch,
 	tgt map[string]any,
   ) error {
-	return DyRun(src, patches, tgt) ///**
+	return DyRun(src, patches, tgt) ///**parts := 
 }
 
 func init() {

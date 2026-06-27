@@ -14,7 +14,9 @@ func applyRpl(
 
 	// var err error
 
-	parts := strings.Split(strings.Trim(p.PathKey, "/"), "/") ///
+	parts := strings.FieldsFunc(
+	p.PathKey,func(r rune) bool { return r == '/' }, ////
+	)
 
 	cur := tgt
 	for i := 0; i < len(parts)-1; i++ {

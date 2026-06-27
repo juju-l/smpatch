@@ -16,8 +16,10 @@ func applyDel(
 
 	// var err error
 
-	parts := strings.Split(
-	strings.Trim(p.PathKey, "/"), "/",//
+	parts := strings.FieldsFunc(
+	p.PathKey,
+	func(r rune) bool { return r == '/' },
+	//
 	)
 
 	cur := tgt
