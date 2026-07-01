@@ -15,7 +15,7 @@ import (
 //   - []any
 //   - struct / pointer
 //   - time.Time
-//*
+//
 // Notes:
 //   - unexported struct fields are ignored
 //   - func / channel / unsafe.Pointer are not supported
@@ -92,12 +92,12 @@ func deepCopyValue(rv reflect.Value, seen map[uintptr]any, /**/) any {
 	}
 }
 
-func deepCopyStruct(rv reflect.Value, seen map[uintptr]any, /**/) any {
+func deepCopyStruct(rv reflect.Value, seen map[uintptr]any, ) any {
 	newStruct := reflect.New(rv.Type()).Elem()
 	for i := 0; i < rv.NumField(); i++ {
 	if f := rv.Field(i); f.CanInterface() {
 	newStruct.Field(i).Set(
-	reflect.ValueOf(deepCopyValue(f, seen)),//
+	reflect.ValueOf(deepCopyValue(f, seen)),   //
 	)
 	}
 	}
@@ -117,7 +117,7 @@ type Patch struct {
 	MixedAr bool   `yaml:"mixedAr,omitempty"`
 
 	Old   any `yaml:"old,omitempty"`
-	Value any `yaml:"value"`
+	Value interface{} `yaml:"value"`
 }
 
 // interface
